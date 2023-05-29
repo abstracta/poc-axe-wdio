@@ -1,41 +1,61 @@
 const { remote } = require('webdriverio');
 const AxeBuilder = require('@axe-core/webdriverio').default;
-const path = require('path');
+const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 const { createHtmlReport } = require('axe-html-reporter');
 
 describe('Accessibility Test', () => {
-  it('should get the accessibility results from a page', async () => {
-    // Initialize WebDriverIO and AxeBuilder
-    //const builder = new AxeBuilder({ client: browser }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']);
-    const builder = new AxeBuilder({ client: browser });
+  const sitemapUrl = 'https://abstracta.us/sitemap.xml';
 
-    await browser.url('https://abstracta.us/');
+  async function fetchSitemapUrls() {
+    try {
+      const response = await axios.get(sitemapUrl);
+      const allUrls = response.data.match(/<loc>(.*?)<\/loc>/g).map((loc) => loc.replace('<loc>', '').replace('</loc>', ''));
+  
+      // Filter out URLs starting with "/blog/"
+      const filteredUrls = allUrls.filter((url) => !url.includes('/blog/'));
+  
+      return filteredUrls;
+    } catch (err) {
+      console.error('Error fetching sitemap:', err);
+      return [];
+    }
+  }
 
-    // Analyze accessibility
-    const result = await builder.analyze();
+  it('should get the accessibility results from multiple pages', async () => {
+    const pageUrls = await fetchSitemapUrls();
+    const axeBuilder = new AxeBuilder({ client: browser });
 
-    console.log('Accessibility Results:');
-    console.log(JSON.stringify(result, null, 2));
+    try {
+      for (const url of pageUrls) {
+        await browser.url(url);
 
-    // Export results to a JSON file
-    const jsonFilePath = path.resolve(__dirname, '../output/accessibility-results.json');
-    fs.writeFileSync(jsonFilePath, JSON.stringify(result, null, 2));
+        const accessibilityResult = await axeBuilder.analyze();
 
-    // Generate HTML report
-    const reportHTML = createHtmlReport({
-      results: result,
-      options: {
-        projectKey: 'Abstracta',
-        doNotCreateReportFile: true,
-      },
-    });
+        console.log('Accessibility Results for', url);
+        console.log(JSON.stringify(accessibilityResult, null, 2));
 
-    console.log('reportHTML will have full content of HTML file.');
-    // Save report to file
-    const htmlFilePath = path.resolve(__dirname, '../output/accessibility-results.html');
-    fs.writeFileSync(htmlFilePath, reportHTML);
+        const jsonFilePath = path.resolve(__dirname, '../output/accessibility-results.json');
+        fs.writeFileSync(jsonFilePath, JSON.stringify(accessibilityResult, null, 2));
 
-    await browser.deleteSession();
+        const reportHTML = createHtmlReport({
+          results: accessibilityResult,
+          options: {
+            projectKey: 'Abstracta',
+            doNotCreateReportFile: true,
+          },
+        });
+
+        const pathPart = new URL(url).pathname;
+        const newPath = pathPart.replace(/[^a-z0-9]/gi, '_').replace(/_/g, '-');
+        const htmlFilePath = path.resolve(__dirname, '../output', `accessibility-results-${newPath}.html`);
+        fs.writeFileSync(htmlFilePath, reportHTML);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      await browser.deleteSession();
+    }
   });
 });
