@@ -1,11 +1,10 @@
 # PoC Axe + WDIO
 
-This project is an automated testing project that utilizes WebdriverIO (WDIO) and Axe to test the accessibility of a web page. The purpose of this framework is to analyze the accessibility of a web page and output the results to a JSON file and an HTML report.
+This project is an automated testing project that utilizes WebdriverIO (WDIO) and Axe to test the accessibility of a web page. The purpose of this framework is to analyze the accessibility of a web page and output the results to an HTML report.
 
 ## Project structure
 
 ### /output
-- accessibility-results.json 
 - accessibility-results.html 
 
 ### /pages
@@ -26,10 +25,10 @@ npm install
  ```
  npm run wdio
  ```
-4.  After running the test, you can find the accessibility results in a JSON file and an HTML report inside the /output directory.
+4.  After running the test, you will be able to find the accessibility results for each page of the sitemap in an HTML report located within the /output directory.
 
 ## Axe Report
-This project uses Axe to generate an accessibility report that provides information about the accessibility of the web page. After running the tests, the report can be found in the /output directory in both JSON and HTML formats.
+This project uses Axe to generate an accessibility report that provides information about the accessibility of the web page. After running the tests, the report can be found in the /output directory in HTML format.
 
 Note: The AxeBuilder object in the ```accessibility.test.js``` file can be configured to include or exclude specific accessibility tests by using the ```.withTags()``` method.
 
