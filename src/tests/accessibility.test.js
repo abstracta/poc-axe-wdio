@@ -1,61 +1,52 @@
-const { remote } = require('webdriverio');
-const AxeBuilder = require('@axe-core/webdriverio').default;
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-const { createHtmlReport } = require('axe-html-reporter');
+import AxeBuilder from '@axe-core/webdriverio';
+import { get } from 'axios';
+import { createHtmlReport } from 'axe-html-reporter';
+
+// URL of the sitemap file
+const sitemapUrl = 'https://abstracta.us/sitemap.xml';
+
+// Set to analyze the entire site or only a subset
+const fullScan = false;
 
 describe('Accessibility Test', () => {
-  const sitemapUrl = 'https://abstracta.us/sitemap.xml';
-
+  
   async function fetchSitemapUrls() {
-    try {
-      const response = await axios.get(sitemapUrl);
-      const allUrls = response.data.match(/<loc>(.*?)<\/loc>/g).map((loc) => loc.replace('<loc>', '').replace('</loc>', ''));
+
+    // Extract the URLs from the sitemap
+    const response = await get(sitemapUrl);
+    const urls = response.data.split('<loc>').slice(1).map(line => line.split('</loc>')[0]);
+
+    // Returning either all URLs on the sitemap or a subset based on the value of fullScan
+    return fullScan ? urls : urls.slice(1, 2);
   
-      // Filter out URLs starting with "/blog/"
-      const filteredUrls = allUrls.filter((url) => !url.includes('/blog/'));
-  
-      return filteredUrls;
-    } catch (err) {
-      console.error('Error fetching sitemap:', err);
-      return [];
-    }
   }
 
-  it('should get the accessibility results from multiple pages', async () => {
+  it('should get the accessibility results from the specified pages', async () => {
+
     const pageUrls = await fetchSitemapUrls();
-    const axeBuilder = new AxeBuilder({ client: browser });
 
-    try {
-      for (const url of pageUrls) {
-        await browser.url(url);
+    for (const url of pageUrls) {
 
-        const accessibilityResult = await axeBuilder.analyze();
+      // Navigate to the current URL
+      await browser.url(url);
 
-        console.log('Accessibility Results for', url);
-        console.log(JSON.stringify(accessibilityResult, null, 2));
+      // Wait for the page to load completely
+      await browser.waitUntil(async () => (await browser.execute(() => document.readyState)) === 'complete', { timeout: 10000, timeoutMsg: 'Page did not load within 10 seconds' });
 
-        const jsonFilePath = path.resolve(__dirname, '../output/accessibility-results.json');
-        fs.writeFileSync(jsonFilePath, JSON.stringify(accessibilityResult, null, 2));
+      // Analyze the current page using axe-core
+      const axeBuilder = new AxeBuilder({ client: browser });
+      const accessibilityResult = await axeBuilder.analyze();
 
-        const reportHTML = createHtmlReport({
-          results: accessibilityResult,
-          options: {
-            projectKey: 'Abstracta',
-            doNotCreateReportFile: true,
-          },
-        });
+      // Print the results for the current URL to the terminal
+      console.log('Accessibility Results for', url);
+      console.log(JSON.stringify(accessibilityResult, null, 2));
 
-        const pathPart = new URL(url).pathname;
-        const newPath = pathPart.replace(/[^a-z0-9]/gi, '_').replace(/_/g, '-');
-        const htmlFilePath = path.resolve(__dirname, '../output', `accessibility-results-${newPath}.html`);
-        fs.writeFileSync(htmlFilePath, reportHTML);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      await browser.deleteSession();
+      // Generate an HTML report for the results of the current URL
+      createHtmlReport({
+        results: accessibilityResult,
+        options: { reportFileName: `${url.split('/').pop()}-axe-report.html`},
+      });
     }
+
   });
 });
