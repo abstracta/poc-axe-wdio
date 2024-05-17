@@ -1,6 +1,6 @@
-import AxeBuilder from '@axe-core/webdriverio';
-import { get } from 'axios';
-import { createHtmlReport } from 'axe-html-reporter';
+const AxeBuilder = require('@axe-core/webdriverio').default;
+const { get } = require('axios');
+const { createHtmlReport } = require('axe-html-reporter');
 
 // URL of the sitemap file
 const sitemapUrl = 'https://abstracta.us/sitemap.xml';
