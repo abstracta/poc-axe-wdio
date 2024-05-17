@@ -4,14 +4,11 @@ This project is an automated testing project that utilizes WebdriverIO (WDIO) an
 
 ## Project structure
 
-### /output
+### /artifacts
 - accessibility-results.html 
 
-### /pages
-- accessibility.test.js: This file contains the test code that analyzes the accessibility of a web page using Axe.
-
 ### /tests
-- search.js: 
+- accessibility.test.js: This file contains the test code that analyzes the accessibility of a web page using Axe.
 
 ## How to run
 To get started with this project, follow the steps below:
@@ -28,7 +25,7 @@ npm install
 4.  After running the test, you will be able to find the accessibility results for each page of the sitemap in an HTML report located within the /output directory.
 
 ## Axe Report
-This project uses Axe to generate an accessibility report that provides information about the accessibility of the web page. After running the tests, the report can be found in the /output directory in HTML format.
+This project uses Axe to generate an accessibility report that provides information about the accessibility of the web page. After running the tests, the report can be found in the /artifacts directory in HTML format.
 
 Note: The AxeBuilder object in the ```accessibility.test.js``` file can be configured to include or exclude specific accessibility tests by using the ```.withTags()``` method.
 
